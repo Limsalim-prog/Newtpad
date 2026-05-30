@@ -16,13 +16,8 @@ Window {
     readonly property color txtGray: "#8E8E8E"
 
     property int noteCounter: 1
-    property int currentEditIndex: -1
 
-        // Model penampung tab yang aktif selama sesi editing
-    ListModel {
-        id: activeTabsModel
-    }
-
+    // DATABASE LOKAL GLOBAL
     ListModel {
         id: notesModel
         ListElement {
@@ -42,7 +37,9 @@ Window {
         color: bgDark
     }
 
+    // ====================================================
     // LAYER LOADING SCREEN
+    // ====================================================
     Item {
         id: loadingScreen
         anchors.fill: parent
@@ -74,7 +71,9 @@ Window {
         }
     }
 
+    // ====================================================
     // STACKVIEW ENGINE
+    // ====================================================
     StackView {
         id: mainStackView
         anchors.fill: parent
@@ -83,6 +82,7 @@ Window {
         initialItem: mainLayoutComponent
     }
 
+    // COMPONENT 1: Tampilan Utama (List Notes)
     Component {
         id: mainLayoutComponent
 
@@ -102,7 +102,6 @@ Window {
                         Rectangle { width: 70; height: 30; radius: 15; color: orangeAccent; Text { text: "Semua"; anchors.centerIn: parent; color: "#FFFFFF"; font.family: "Monospace"; font.pixelSize: 12 } }
                         Rectangle { width: 65; height: 30; radius: 15; color: cardBg; border.color: "#333333"; Text { text: "Work"; anchors.centerIn: parent; color: "#FFFFFF"; font.family: "Monospace"; font.pixelSize: 12 } }
                         Rectangle { width: 80; height: 30; radius: 15; color: cardBg; border.color: "#333333"; Text { text: "Bulanan"; anchors.centerIn: parent; color: "#FFFFFF"; font.family: "Monospace"; font.pixelSize: 12 } }
-                        Rectangle { Layout.fillWidth: true ; height: 1; color: "#2C2C2C" }
                     }
                 }
 
@@ -118,29 +117,16 @@ Window {
                         noteBody: model.body
                         noteDate: model.date
 
+                        // PANGGIL SINYAL KLIK DARI NOTECARD
                         onClicked: {
                             console.log("Klik terdeteksi di indeks: " + index)
-
-                            // Cek apakah catatan sudah terdaftar di tab sesi saat ini
-                            let exists = false
-                            for (let i = 0; i < activeTabsModel.count; i++) {
-                                if (activeTabsModel.get(i).noteIndex === index) {
-                                    exists = true
-                                    break
-                                    }
-                            }
-                                // Kalau belum ada, suntik masuk ke list tab aktif
-                                if (!exists) {
-                                    activeTabsModel.append({
-                                        "noteIndex": index,
-                                        "title": model.title,
-                                        "body": model.body,
-                                        "date": model.date
-                                    })
-                                }
-
-                            window.currentEditIndex = index
-                            mainStackView.push(editNotePageComponent)
+                            // LANGSUNG PUSH PAKE ID REKOMENDASI COMPONENT
+                            mainStackView.push(editNotePageComponent, {
+                                "currentTitle": model.title,
+                                "currentBody": model.body,
+                                "currentDate": model.date,
+                                "noteIndex": index
+                            })
                         }
                     }
                 }
@@ -168,25 +154,21 @@ Window {
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
-                                let currentDateObj = new Date()
-                                    let newDateStr = currentDateObj.toLocaleString(Qt.locale("en_US"), "dd/MM/yyyy hh:mm AM")
-                                        notesModel.append({
-                                            "title": "New Note #" + window.noteCounter,
-                                            "body": "",
-                                            "date": newDateStr
-                                        })
-                                    let newIndex = notesModel.count - 1
-                                        window.noteCounter++
+                                let newDateStr = "20/05/2026 03:35 PM"
+                                notesModel.append({
+                                    "title": "New Note #" + window.noteCounter,
+                                    "body": "",
+                                    "date": newDateStr
+                                })
+                                let newIndex = notesModel.count - 1
+                                window.noteCounter++
 
-                                    // Otomatis daftarkan note baru ini ke session tab
-                                        activeTabsModel.append({
-                                            "noteIndex": newIndex,
-                                            "title": notesModel.get(newIndex).title,
-                                            "body": "",
-                                            "date": newDateStr
-                                    })
-                                window.currentEditIndex = newIndex
-                                mainStackView.push(editNotePageComponent)
+                                mainStackView.push(editNotePageComponent, {
+                                    "currentTitle": notesModel.get(newIndex).title,
+                                    "currentBody": "",
+                                    "currentDate": newDateStr,
+                                    "noteIndex": newIndex
+                                })
                             }
                         }
                     }
@@ -195,53 +177,20 @@ Window {
         }
     }
 
+    // COMPONENT 2: Embed File EditNotePage Secara Aman
     Component {
-            id: editNotePageComponent
+        id: editNotePageComponent
 
-            EditNotePage {
-                noteIndex: window.currentEditIndex
-                currentTitle: notesModel.get(window.currentEditIndex).title
-                currentBody: notesModel.get(window.currentEditIndex).body
-                currentDate: notesModel.get(window.currentEditIndex).date
-
-                onSaveClicked: function(idx, updatedTitle, updatedBody) {
-                    // 1. Amankan state ketikan tab yang sedang aktif ke session model
-                    for (let i = 0; i < activeTabsModel.count; i++) {
-                        if (activeTabsModel.get(i).noteIndex === window.currentEditIndex) {
-                            activeTabsModel.setProperty(i, "title", updatedTitle)
-                            activeTabsModel.setProperty(i, "body", updatedBody)
-                            break
-                        }
-                    }
-                    // 2. Commit massal seluruh isi tab aktif ke database utama (notesModel)
-                    for (let j = 0; j < activeTabsModel.count; j++) {
-                        let t = activeTabsModel.get(j)
-                        notesModel.setProperty(t.noteIndex, "title", t.title)
-                        notesModel.setProperty(t.noteIndex, "body", t.body)
-                    }
-                    activeTabsModel.clear()
-                    window.currentEditIndex = -1
-                    mainStackView.pop()
+        EditNotePage {
+            // Sambungkan sinyal save ke logika update model
+            onSaveClicked: function(index, updatedTitle, updatedBody) {
+                if(index >= 0 && index < notesModel.count) {
+                    notesModel.setProperty(index, "title", updatedTitle)
+                    notesModel.setProperty(index, "body", updatedBody)
                 }
-
-                onBackClicked: function() {
-                    // Batal edit, clear workspace, balik menu utama
-                    activeTabsModel.clear()
-                    window.currentEditIndex = -1
-                    mainStackView.pop()
-                }
-
-                onIntegrateAddClicked: function(idx, updatedTitle, updatedBody) {
-                    // Simpan perubahan sementara ke RAM session, lalu balik ke main menu buat milih note tambahan
-                    for (let i = 0; i < activeTabsModel.count; i++) {
-                        if (activeTabsModel.get(i).noteIndex === window.currentEditIndex) {
-                            activeTabsModel.setProperty(i, "title", updatedTitle)
-                            activeTabsModel.setProperty(i, "body", updatedBody)
-                            break
-                        }
-                    }
-                    mainStackView.pop()
-                }
+                mainStackView.pop() // Mundur ke list utama
+                console.log("Catatan aman di-update!")
             }
         }
+    }
 }

@@ -1,6 +1,0 @@
-<RCC>
-  <qresource prefix="/">
-    <file alias="/qt/qml/Newtpad">/home/unarch/ProjectsQT/Newtpad/build/Desktop-Debug/Newtpad</file>
-
-  </qresource>
-</RCC>
