@@ -1,0 +1,14 @@
+-I
+/home/unarch/ProjectsQT/Newtpad/build/Desktop-Debug
+-I
+/home/unarch/ProjectsQT/Newtpad/build/Desktop-Debug/Newtpad
+-I
+/home/unarch/ProjectsQT/Newtpad/build/Desktop-Debug
+-I
+/usr/lib/qt6/qml
+--resource
+/home/unarch/ProjectsQT/Newtpad/build/Desktop-Debug/.qt/rcc/qmake_Newtpad.qrc
+--resource
+/home/unarch/ProjectsQT/Newtpad/build/Desktop-Debug/.qt/rcc/appNewtpad_raw_qml_0.qrc
+--module
+Newtpad
