@@ -5,23 +5,20 @@ Rectangle {
     id: cardRoot
     width: parent.width
     height: 120
-    color: "#222222" // cardBg sesuai mockup lu
+    color: "#222222"
     radius: 12
     border.color: "#333333"
     border.width: 1
 
-    // Properti buat nerima passing data dari ListModel di Main.qml
     property string noteTitle: ""
     property string noteBody: ""
     property string noteDate: ""
 
-    // Bikin sinyal klik kustom biar bisa ditangkap sama ListView
     signal clicked()
 
-    // MouseArea menguasai seluruh area kotak kartu
     MouseArea {
         anchors.fill: parent
-        onClicked: cardRoot.clicked() // Lempar sinyal pas diklik
+        onClicked: cardRoot.clicked()
     }
 
     Column {
@@ -30,7 +27,7 @@ Rectangle {
         spacing: 8
 
         Text {
-            text: cardRoot.noteTitle
+            text: cardRoot.noteTitle === "" ? "Untitled Note" : cardRoot.noteTitle
             font.family: "Monospace"
             font.pixelSize: 18
             font.bold: true
@@ -40,7 +37,7 @@ Rectangle {
         }
 
         Text {
-            text: cardRoot.noteBody
+            text: cardRoot.noteBody === "" ? "No content yet..." : cardRoot.noteBody
             font.family: "Monospace"
             font.pixelSize: 13
             color: "#8E8E8E"
