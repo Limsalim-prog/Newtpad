@@ -1,0 +1,279 @@
+{
+    "formatRevision": 1,
+    "modules": [
+        {
+            "moduleFiles": [
+                {
+                    "entries": [
+                        {
+                            "codegenResult": 2,
+                            "column": 5,
+                            "durationMicroseconds": 1000,
+                            "functionName": "commitCurrentChanges",
+                            "line": 18,
+                            "message": "Cannot access value for name notesModel"
+                        },
+                        {
+                            "codegenResult": 2,
+                            "column": 25,
+                            "durationMicroseconds": 0,
+                            "functionName": "onNoteIndexChanged",
+                            "line": 26,
+                            "message": "Cannot access value for name notesModel"
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 19,
+                            "durationMicroseconds": 0,
+                            "functionName": "fill",
+                            "line": 7,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 23,
+                            "durationMicroseconds": 0,
+                            "functionName": "fill",
+                            "line": 36,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 23,
+                            "durationMicroseconds": 0,
+                            "functionName": "fill",
+                            "line": 41,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 35,
+                            "durationMicroseconds": 0,
+                            "functionName": "alignment",
+                            "line": 56,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 91,
+                            "durationMicroseconds": 0,
+                            "functionName": "centerIn",
+                            "line": 57,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 32,
+                            "durationMicroseconds": 0,
+                            "functionName": "onClicked",
+                            "line": 60,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 35,
+                            "durationMicroseconds": 0,
+                            "functionName": "fill",
+                            "line": 59,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 30,
+                            "durationMicroseconds": 0,
+                            "functionName": "orientation",
+                            "line": 74,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 33,
+                            "durationMicroseconds": 0,
+                            "functionName": "boundsBehavior",
+                            "line": 77,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 2,
+                            "column": 24,
+                            "durationMicroseconds": 1000,
+                            "functionName": "model",
+                            "line": 78,
+                            "message": "Cannot access value for name activeTabsModel"
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 35,
+                            "durationMicroseconds": 0,
+                            "functionName": "alignment",
+                            "line": 72,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 29,
+                            "durationMicroseconds": 0,
+                            "functionName": "target",
+                            "line": 82,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 2,
+                            "column": 21,
+                            "durationMicroseconds": 2000,
+                            "functionName": "onNoteIndexChanged",
+                            "line": 83,
+                            "message": "Cannot access value for name activeTabsModel"
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 28,
+                            "durationMicroseconds": 0,
+                            "functionName": "width",
+                            "line": 95,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 2,
+                            "column": 28,
+                            "durationMicroseconds": 0,
+                            "functionName": "color",
+                            "line": 97,
+                            "message": "Cannot access value for name editPageRoot"
+                        },
+                        {
+                            "codegenResult": 2,
+                            "column": 35,
+                            "durationMicroseconds": 0,
+                            "functionName": "color",
+                            "line": 99,
+                            "message": "Cannot access value for name editPageRoot"
+                        },
+                        {
+                            "codegenResult": 2,
+                            "column": 31,
+                            "durationMicroseconds": 1000,
+                            "functionName": "text",
+                            "line": 104,
+                            "message": "Cannot access value for name notesModel"
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 58,
+                            "durationMicroseconds": 0,
+                            "functionName": "width",
+                            "line": 106,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 32,
+                            "durationMicroseconds": 0,
+                            "functionName": "elide",
+                            "line": 107,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 70,
+                            "durationMicroseconds": 0,
+                            "functionName": "horizontalAlignment",
+                            "line": 107,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 43,
+                            "durationMicroseconds": 0,
+                            "functionName": "centerIn",
+                            "line": 106,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 2,
+                            "column": 36,
+                            "durationMicroseconds": 0,
+                            "functionName": "onClicked",
+                            "line": 112,
+                            "message": "Cannot access value for name editPageRoot"
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 39,
+                            "durationMicroseconds": 0,
+                            "functionName": "fill",
+                            "line": 111,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 35,
+                            "durationMicroseconds": 0,
+                            "functionName": "alignment",
+                            "line": 125,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 91,
+                            "durationMicroseconds": 0,
+                            "functionName": "centerIn",
+                            "line": 126,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 32,
+                            "durationMicroseconds": 0,
+                            "functionName": "onClicked",
+                            "line": 129,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 35,
+                            "durationMicroseconds": 0,
+                            "functionName": "fill",
+                            "line": 128,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 0,
+                            "column": 19,
+                            "durationMicroseconds": 0,
+                            "functionName": "text",
+                            "line": 148,
+                            "message": ""
+                        },
+                        {
+                            "codegenResult": 2,
+                            "column": 23,
+                            "durationMicroseconds": 0,
+                            "functionName": "wrapMode",
+                            "line": 159,
+                            "message": "Could not find property \"wrapMode\"."
+                        },
+                        {
+                            "codegenResult": 2,
+                            "column": 32,
+                            "durationMicroseconds": 0,
+                            "functionName": "verticalAlignment",
+                            "line": 161,
+                            "message": "Could not find property \"verticalAlignment\"."
+                        },
+                        {
+                            "codegenResult": 2,
+                            "column": 27,
+                            "durationMicroseconds": 0,
+                            "functionName": "wrapMode",
+                            "line": 173,
+                            "message": "Could not find property \"wrapMode\"."
+                        }
+                    ],
+                    "filePath": "/home/unarch/ProjectsQT/Newtpad/Newtpad_V0.0.3/EditNotePage.qml"
+                }
+            ],
+            "moduleId": "Newtpad(appNewtpad)"
+        }
+    ]
+}

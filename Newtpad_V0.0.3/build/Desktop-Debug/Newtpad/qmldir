@@ -1,0 +1,9 @@
+module Newtpad
+typeinfo appNewtpad.qmltypes
+prefer :/qt/qml/Newtpad/
+Main 254.0 Main.qml
+NoteCard 254.0 NoteCard.qml
+EditNotePage 254.0 EditNotePage.qml
+CustomDialog 254.0 CustomDialog.qml
+depends QtQuick
+

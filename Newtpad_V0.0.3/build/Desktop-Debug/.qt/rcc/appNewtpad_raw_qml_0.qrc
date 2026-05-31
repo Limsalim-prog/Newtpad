@@ -1,0 +1,9 @@
+<RCC>
+  <qresource prefix="/qt/qml/Newtpad/">
+    <file alias="Main.qml">/home/unarch/ProjectsQT/Newtpad/Newtpad_V0.0.3/Main.qml</file>
+    <file alias="NoteCard.qml">/home/unarch/ProjectsQT/Newtpad/Newtpad_V0.0.3/NoteCard.qml</file>
+    <file alias="EditNotePage.qml">/home/unarch/ProjectsQT/Newtpad/Newtpad_V0.0.3/EditNotePage.qml</file>
+    <file alias="CustomDialog.qml">/home/unarch/ProjectsQT/Newtpad/Newtpad_V0.0.3/CustomDialog.qml</file>
+  </qresource>
+</RCC>
+
