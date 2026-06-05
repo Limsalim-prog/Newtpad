@@ -1,0 +1,11 @@
+# Abaikan semua jenis folder build Qt
+build/
+build-*/
+*-Debug/
+*-Release/
+.qt/
+
+# Abaikan file konfigurasi IDE
+CMakeCache.txt
+CMakeLists.txt.user
+*.pro.user
