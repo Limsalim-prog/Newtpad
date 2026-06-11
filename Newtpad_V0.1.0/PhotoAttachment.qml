@@ -8,11 +8,9 @@ import QtCore
 Item {
     id: root
     Layout.fillWidth: true
-    Layout.preferredHeight: implicitHeight
+    Layout.preferredHeight: photoModel.count > 0 ? photoListLayout.implicitHeight : 0
     implicitWidth: parent ? parent.width : 360
-    implicitHeight: photoListLayout.implicitHeight
-    visible: photoModel.count > 0
-    clip: true
+    implicitHeight: photoModel.count > 0 ? photoListLayout.implicitHeight : 0
 
     signal dataChanged()
 
@@ -38,202 +36,225 @@ Item {
         return JSON.stringify(tempArr)
     }
 
+    // Fungsi dipanggil oleh halaman edit saat memencet tombol tambah foto
     function openMenu() {
-        mediaMenu.open()
+        mediaMenuPopup.open()
     }
 
     ListModel { id: photoModel }
 
+    // ==========================================
+    // 1. DIALOG PILIH FOTO DARI GALERI
+    // ==========================================
     FileDialog {
         id: fileDialog
         title: "Pilih Foto"
         currentFolder: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
         nameFilters: ["Image files (*.png *.jpg *.jpeg)"]
         onAccepted: {
-            photoModel.append({ "path": selectedFile.toString() })
+            photoModel.append({ "path": fileDialog.selectedFile.toString() })
             root.dataChanged()
         }
     }
 
-    Menu {
-        id: mediaMenu
-        MenuItem {
-            text: "📷 Buka Kamera";
-            font.family: "Monospace";
-            onTriggered: {
-                if (mediaDevices.videoInputs.length > 0) {
-                    cameraPopup.open()
-                } else {
-                    window.show("Hardware kamera ga kedetek njir! 📸❌")
+    // ==========================================
+    // 2. MENU PILIHAN MEDIA (Kustom Popup)
+    // ==========================================
+    Popup {
+        id: mediaMenuPopup
+        parent: Overlay.overlay
+        width: 250
+        height: 120
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - height) / 2)
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        background: Rectangle {
+            color: "#181818"
+            radius: 12
+            border.color: "#333333"
+            border.width: 1
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 8
+            spacing: 4
+
+            Rectangle {
+                Layout.fillWidth: true; height: 44
+                color: galeriMouseArea.pressed ? "#333333" : "transparent"
+                radius: 8
+                Text {
+                    text: "📁 Pilih dari Galeri"; color: "#FFFFFF"
+                    font.family: "Monospace"; font.pixelSize: 14
+                    anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: 12
+                }
+                MouseArea {
+                    id: galeriMouseArea; anchors.fill: parent
+                    onClicked: { mediaMenuPopup.close(); fileDialog.open() }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true; height: 44
+                color: kameraMouseArea.pressed ? "#333333" : "transparent"
+                radius: 8
+                Text {
+                    text: "📸 Buka Kamera"; color: "#FFFFFF"
+                    font.family: "Monospace"; font.pixelSize: 14
+                    anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: 12
+                }
+                MouseArea {
+                    id: kameraMouseArea; anchors.fill: parent
+                    onClicked: { mediaMenuPopup.close(); cameraPopup.open() }
                 }
             }
         }
-        MenuItem { text: "🖼️ Tambah dari Galeri"; font.family: "Monospace"; onTriggered: fileDialog.open() }
     }
 
+    // ==========================================
+    // 3. POPUP KAMERA
+    // ==========================================
     Popup {
-            id: cameraPopup
-            parent: Overlay.overlay
-            x: Math.round((parent.width - width) / 2)
-            y: Math.round((parent.height - height) / 2)
-            width: parent.width - 32
-            height: parent.height - 64
-            modal: true
-            background: Rectangle { color: "#121212"; radius: 12; border.color: "#333333"; border.width: 1 }
+        id: cameraPopup
+        parent: Overlay.overlay
+        width: Math.min(parent.width - 40, 400)
+        height: 500
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - height) / 2)
+        modal: true; focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
-            property int currentCameraIndex: 0
-            property bool isMirrored: true // Default mirror
+        background: Rectangle { color: "#181818"; radius: 12; border.color: "#333333"; border.width: 1 }
 
-            MediaDevices { id: mediaDevices }
+        onOpened: camera.start()
+        onClosed: camera.stop()
 
-            Camera {
-                id: camera
-                active: cameraPopup.opened
-                cameraDevice: mediaDevices.videoInputs.length > 0 ? mediaDevices.videoInputs[cameraPopup.currentCameraIndex] : mediaDevices.defaultVideoInput
-            }
+        CaptureSession {
+                    id: captureSession
+                    camera: Camera { id: camera; active: false }
+                    videoOutput: videoOutput
+                    imageCapture: ImageCapture {
+                        id: imageCapture
 
-            CaptureSession {
-                id: captureSession
-                camera: camera
-                videoOutput: videoOutput
-            }
+                        onImageCaptured: function(id, previewImage) {
+                            console.log("IMAGE CAPTURED")
+                        }
 
-            Timer {
-                id: closeDelayTimer
-                interval: 800
-                repeat: false
-                onTriggered: cameraPopup.close()
-            }
+                        onImageSaved: function(id, fileName) {
+                            console.log("IMAGE SAVED:", fileName)
 
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 12
-                spacing: 12
+                            let finalPath = fileName.toString()
 
-                VideoOutput {
-                    id: videoOutput
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    fillMode: VideoOutput.PreserveAspectCrop
+                            if (!finalPath.startsWith("file:///"))
+                                finalPath = "file:///" + finalPath
 
-                    // FIX MIRROR: Kita pake sumbu Scale biar mau backend-nya bosok tetep ke-mirror
-                    transform: Scale {
-                        origin.x: videoOutput.width / 2
-                        xScale: cameraPopup.isMirrored ? -1 : 1
-                    }
-                }
+                            photoModel.append({
+                                path: finalPath
+                            })
 
-                RowLayout {
-                    Layout.alignment: Qt.AlignHCenter
-                    spacing: 20
-                    z: 99 // FIX OVERLAP: Paksa barisan tombol ini ke lapisan terdepan biar ga ketutup layer ghaib
+                            root.dataChanged()
+                        }
 
-                    // Tombol Batal/Tutup
-                    Rectangle {
-                        width: 40; height: 40; radius: 20; color: "#333333"
-                        Text { text: "✕"; color: "white"; anchors.centerIn: parent }
-                        MouseArea { anchors.fill: parent; onClicked: cameraPopup.close() }
-                    }
-
-                    // Tombol Shutter (Merah)
-                    Rectangle {
-                        width: 60; height: 60; radius: 30; color: "#F2542D"; border.color: "#FFFFFF"; border.width: 2
-                        MouseArea {
-                            anchors.fill: parent;
-                            onClicked: {
-                                console.log("📸 TEST: Tombol shutter berhasil kepencet!")
-
-                                videoOutput.grabToImage(function(result) {
-                                    if (!result) {
-                                        console.log("❌ Frame kamera kosong / diblokir OS.")
-                                        closeDelayTimer.start()
-                                        return
-                                    }
-
-                                    let fullPath = "/tmp/newtpad_cam_" + new Date().getTime() + ".jpg"
-                                    let isSaved = result.saveToFile(fullPath)
-
-                                    console.log("💾 Status Save OS:", isSaved ? "SUKSES" : "GAGAL", "->", fullPath)
-
-                                    if (isSaved) {
-                                        photoModel.append({ "path": "file://" + fullPath })
-                                        root.dataChanged()
-                                    }
-                                    closeDelayTimer.start()
-                                })
-                            }
+                        onErrorOccurred: function(id, error, message) {
+                            console.log("CAPTURE ERROR:", message)
                         }
                     }
-
-                    // Tombol Toggle Mirror
-                    Rectangle {
-                        width: 40; height: 40; radius: 20; color: "#333333"
-                        Text { text: "🪞"; color: "white"; anchors.centerIn: parent; font.pixelSize: 16 }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                console.log("🪞 TEST: Tombol mirror kepencet!")
-                                cameraPopup.isMirrored = !cameraPopup.isMirrored
-                            }
-                        }
-                    }
-
-                    // Tombol Putar Kamera
-                    Rectangle {
-                        width: 40; height: 40; radius: 20; color: "#333333"
-                        visible: mediaDevices.videoInputs.length > 1
-                        Text { text: "🔄"; color: "white"; anchors.centerIn: parent; font.pixelSize: 16 }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                if (mediaDevices.videoInputs.length > 1) {
-                                    cameraPopup.currentCameraIndex = (cameraPopup.currentCameraIndex + 1) % mediaDevices.videoInputs.length
-                                    camera.cameraDevice = mediaDevices.videoInputs[cameraPopup.currentCameraIndex]
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-    // TAMPILAN LIST FOTO YANG SELARAS SAMA PANEL TEKS
+}
         ColumnLayout {
-            id: photoListLayout
-            width: parent.width
-            spacing: 12
+            anchors.fill: parent; anchors.margins: 16; spacing: 12
 
-            Repeater {
-                model: photoModel
-                delegate: Rectangle {
-                    Layout.fillWidth: true
-                    // FIX BUG INVISIBLE: Pake root.width (bukan width lokal) biar dapet ukuran presisi
-                    Layout.preferredHeight: Math.min(root.width * 0.6, 380)
-                    color: "#181818"
-                    radius: 12
-                    border.color: "#333333"
-                    clip: true
+            Text {
+                text: "Ambil Foto 📸"
+                font.family: "Monospace"; font.pixelSize: 16; font.bold: true; color: "#FFFFFF"
+                Layout.alignment: Qt.AlignHCenter
+            }
 
-                    Image {
-                        anchors.fill: parent
-                        source: model.path
-                        fillMode: Image.PreserveAspectCrop // Biar foto lu ga gepeng/ketarik kaku
+            VideoOutput {
+                id: videoOutput
+                Layout.fillWidth: true; Layout.fillHeight: true
+                fillMode: VideoOutput.PreserveAspectCrop
+                Rectangle { anchors.fill: parent; color: "transparent"; border.color: "#F2542D"; border.width: 2; radius: 8 }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true; spacing: 12
+
+                Rectangle {
+                    Layout.fillWidth: true; height: 40; color: "transparent"
+                    border.color: "#F2542D"; border.width: 1; radius: 8
+                    Text { text: "Batal"; font.family: "Monospace"; color: "#FFFFFF"; font.pixelSize: 13; anchors.centerIn: parent }
+                    MouseArea { anchors.fill: parent; onClicked: cameraPopup.close() }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true; height: 40
+                    color: imageCapture.readyForCapture ? (captureMouseArea.pressed ? Qt.darker("#F2542D", 1.2) : "#F2542D") : "#555555"
+                    radius: 8; enabled: imageCapture.readyForCapture
+
+                    Text {
+                        text: imageCapture.readyForCapture ? "Jepret" : "Tunggu..."
+                        font.family: "Monospace"; color: "#FFFFFF"; font.bold: true; font.pixelSize: 13
+                        anchors.centerIn: parent
                     }
 
-                    // Tombol hapus tetap aman di pojok kanan atas
-                    Rectangle {
-                        width: 28; height: 28; radius: 8; color: "#B3000000"
-                        anchors.top: parent.top; anchors.right: parent.right; anchors.margins: 8
-                        Text { text: "🗑️"; anchors.centerIn: parent; font.pixelSize: 12 }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                photoModel.remove(index)
-                                root.dataChanged()
-                            }
+                    // Di dalam PhotoAttachment.qml, cari bagian MouseArea tombol jepret
+                    MouseArea {
+                        id: captureMouseArea
+                        anchors.fill: parent
+                        onClicked: {
+                            console.log("CAPTURE START");
+                            imageCapture.captureToFile();
                         }
                     }
                 }
             }
         }
+    }
+
+    // ==========================================
+    // 4. DAFTAR GAMBAR YANG SUDAH MASUK CATATAN
+    // ==========================================
+    ColumnLayout {
+        id: photoListLayout
+        width: parent.width; spacing: 12
+        visible: photoModel.count > 0
+
+        Repeater {
+            model: photoModel
+            delegate: Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Math.min(root.width * 0.6, 380)
+                color: "#181818"; radius: 12; border.color: "#333333"; clip: true
+
+                Image {
+                    anchors.fill: parent
+
+                    source: model.path.startsWith("file:///")
+                            ? model.path
+                            : "file:///" + model.path
+
+                    fillMode: Image.PreserveAspectCrop
+                    cache: false
+                }
+
+                // Tombol Hapus Gambar
+                Rectangle {
+                    width: 28; height: 28; radius: 8; color: "#B3000000"
+                    anchors.top: parent.top; anchors.right: parent.right; anchors.margins: 8
+                    Text { text: "🗑️"; anchors.centerIn: parent; font.pixelSize: 12 }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            photoModel.remove(index)
+                            root.dataChanged()
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

@@ -13,6 +13,21 @@ Window {
     visible: true
     title: qsTr("NewtPad")
 
+    Component.onCompleted: {
+        window.updateArchivedCount()
+    }
+
+    property bool viewArchivedMode: false
+    property int archivedNotesCount: 0
+
+    function updateArchivedCount() {
+        let count = 0;
+        for (let i = 0; i < notesModel.count; i++) {
+            if (notesModel.get(i).isArchived) count++;
+        }
+        archivedNotesCount = count;
+    }
+
     // =============================================
     // INSTANCE HELPERS
     // =============================================
@@ -21,7 +36,7 @@ Window {
         onFirebaseNotesDownloaded: (jsonStr) => {
             let arr = []
             try { arr = JSON.parse(jsonStr) } catch(e) { arr = [] }
-            
+
             notesModel.clear()
             if (Array.isArray(arr) && arr.length > 0) {
                 for (let i = 0; i < arr.length; i++) {
@@ -46,8 +61,8 @@ Window {
                 }
             }
             window.sortNotes()
-            
-            // Simpan lokal sebagai cache setelah unduh dari cloud selesai
+
+            // Simpan lokal sebagai cache
             let localArr = []
             for (let i = 0; i < notesModel.count; i++) {
                 let n = notesModel.get(i)
@@ -70,12 +85,14 @@ Window {
                 })
             }
             appHelper.saveNotes(JSON.stringify(localArr), window.userEmail)
+            window.updateArchivedCount()
             window.show("Data tersinkronisasi dengan Awan! ☁️")
         }
         onFirebaseSyncStatusChanged: (status) => {
             window.syncStatus = status
         }
     }
+
     GoogleLoginHelper {
         id: googleLoginHelper
         onLoginSuccess: {
@@ -84,9 +101,9 @@ Window {
             window.userEmail = googleLoginHelper.userEmail
             window.userAvatar = googleLoginHelper.userAvatar
             window.persistSettings()
-            window.loadPersistedNotes() // Muat cache lokal dulu secara instan
+            window.loadPersistedNotes()
             window.sortNotes()
-            appHelper.downloadFromFirebase(window.userEmail) // Kemudian tarik data terbaru dari cloud
+            appHelper.downloadFromFirebase(window.userEmail)
             window.show("Login Google Berhasil! 👤")
             if (stackView.currentItem && stackView.currentItem.objectName === "loginPage") {
                 stackView.replace(mainPageComponent)
@@ -98,31 +115,21 @@ Window {
     }
 
     // =============================================
-    // SISTEM TEMA — ganti isDark untuk toggle
+    // SISTEM TEMA
     // =============================================
     property bool isDark: true
-
-    // Warna background
     property color bgMain:    isDark ? "#121212" : "#F0F0F0"
     property color bgCard:    isDark ? "#222222" : "#FFFFFF"
     property color bgInput:   isDark ? "#1A1A1A" : "#E8E8E8"
     property color bgNav:     isDark ? "#2C2C2C" : "#FFFFFF"
     property color bgSheet:   isDark ? "#181818" : "#FAFAFA"
     property color bgItem:    isDark ? "#1E1E1E" : "#F5F5F5"
-
-    // Warna teks
     property color txtPrimary: isDark ? "#FFFFFF" : "#121212"
     property color txtMuted:   isDark ? "#8E8E8E" : "#666666"
     property color txtHint:    isDark ? "#666666" : "#AAAAAA"
-
-    // Warna border
     property color borderMain: isDark ? "#333333" : "#DDDDDD"
     property color borderSub:  isDark ? "#2C2C2C" : "#E8E8E8"
-
-    // Aksen tetap sama di kedua tema
     readonly property color orangeAccent: "#F2542D"
-
-    // Alias lama — supaya tidak ada error di file lain yang masih pakai nama lama
     readonly property color bgDark:   bgMain
     readonly property color cardBg:   bgCard
     readonly property color txtWhite: txtPrimary
@@ -140,19 +147,16 @@ Window {
     property var filterCategories: ["Semua", "Work", "Bulanan", "Culinary"]
     property string selectedCategory: "Semua"
 
-    // Google Sign-In & Sync State
     property bool isLoggedIn: false
     property string userName: ""
     property string userEmail: ""
     property string userAvatar: ""
     property string syncStatus: "Belum disinkronkan"
 
-    // Pemicu login Google Asli
     function simulateGoogleLogin() {
         googleLoginHelper.startLogin()
     }
 
-    // Simulasi cloud sync
     function simulateCloudSync() {
         window.syncStatus = "Menyinkronkan data... ⏳"
         syncTimer.start()
@@ -163,7 +167,6 @@ Window {
         interval: 2000
         onTriggered: {
             window.syncStatus = "Terakhir disinkronkan: Baru saja"
-            // Tulis data backup ke file cloud
             let arr = []
             for (let i = 0; i < notesModel.count; i++) {
                 let n = notesModel.get(i)
@@ -200,15 +203,14 @@ Window {
         window.userEmail = ""
         window.userAvatar = ""
         window.syncStatus = "Belum disinkronkan"
-        notesModel.clear() // Bersihkan notes di memori agar tidak bercampur
+        notesModel.clear()
         window.persistSettings()
         window.show("Keluar dari Akun Google.")
         stackView.replace(loginGooglePageComponent)
     }
 
-    // Timer periodik untuk mendeteksi reminder
     Timer {
-        interval: 5000 // Cek setiap 5 detik
+        interval: 5000
         running: true
         repeat: true
         onTriggered: {
@@ -218,11 +220,8 @@ Window {
                 if (note.reminder && note.reminder !== "") {
                     let remVal = parseInt(note.reminder)
                     if (!isNaN(remVal) && nowTime >= remVal) {
-                        // Triger notifikasi!
                         window.show("⏰ PENGINGAT: " + (note.title !== "" ? note.title : "Catatan Tanpa Judul"))
                         appHelper.playNotificationSound()
-                        
-                        // Hapus reminder dari model agar tidak bunyi terus menerus
                         notesModel.setProperty(i, "reminder", "")
                         window.persistNotes()
                     }
@@ -232,7 +231,7 @@ Window {
     }
 
     // =============================================
-    // PERSISTENCE — simpan & muat catatan
+    // PERSISTENCE
     // =============================================
     function persistNotes() {
         let arr = []
@@ -304,7 +303,6 @@ Window {
         appHelper.saveSettings(JSON.stringify(obj))
     }
 
-    // Modifikasi load settings untuk menangani login
     function loadPersistedSettings() {
         let raw = appHelper.loadSettings()
         let obj = {}
@@ -315,7 +313,7 @@ Window {
         if (obj.filterCategories && Array.isArray(obj.filterCategories) && obj.filterCategories.length > 0)
             window.filterCategories = obj.filterCategories
         if (obj.isDark !== undefined)
-            window.isDark = true // Selalu paksa dark mode
+            window.isDark = true
         if (obj.isLoggedIn !== undefined)
             window.isLoggedIn = obj.isLoggedIn
         if (obj.userName !== undefined)
@@ -449,7 +447,6 @@ Window {
                     Layout.fillWidth: true
                 }
 
-                // Tombol Google Sign In Real
                 Rectangle {
                     id: btnSignInGoogle
                     Layout.fillWidth: true
@@ -463,7 +460,6 @@ Window {
                         anchors.centerIn: parent
                         spacing: 12
 
-                        // Simbol Google
                         Text {
                             text: "G"
                             font.pixelSize: 22
@@ -488,7 +484,6 @@ Window {
                         }
                     }
                 }
-
             }
         }
     }
@@ -500,7 +495,6 @@ Window {
             padding: 0
             background: Rectangle { color: window.bgMain }
 
-            // Header Baru dengan info profil Google
             RowLayout {
                 id: mainHeader
                 anchors.top: parent.top
@@ -518,7 +512,6 @@ Window {
                     Layout.fillWidth: true
                 }
 
-                // Tombol Akun Google / Cloud Sync
                 Rectangle {
                     width: 36; height: 36; radius: 18
                     color: window.bgCard
@@ -534,7 +527,6 @@ Window {
                             var ctx = getContext("2d");
                             ctx.reset();
                             if (window.isLoggedIn) {
-                                // User Silhouette (white)
                                 ctx.fillStyle = "white";
                                 ctx.beginPath();
                                 ctx.arc(12, 8, 4.5, 0, 2 * Math.PI);
@@ -543,7 +535,6 @@ Window {
                                 ctx.arc(12, 22, 9, Math.PI, 2 * Math.PI);
                                 ctx.fill();
                             } else {
-                                // Key Silhouette (white)
                                 ctx.strokeStyle = "white";
                                 ctx.lineWidth = 1.5;
                                 ctx.beginPath();
@@ -569,7 +560,6 @@ Window {
                 }
             }
 
-            // Filter kategori (scroll horizontal atas)
             ScrollView {
                 id: categoryScroll
                 width: Math.min(parent.width, 740)
@@ -612,10 +602,90 @@ Window {
                 }
             }
 
-            // Daftar catatan
+            // ==========================================
+                        // KONTINER BANNER ARSIP
+                        // ==========================================
+                        Column {
+                            id: bannerContainer
+                            anchors.top: categoryScroll.bottom
+                            anchors.topMargin: 10
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: Math.min(parent.width - 40, 700)
+                            spacing: 0
+
+                            // Banner 1: Lihat Catatan Diarsipkan
+                            Rectangle {
+                                width: parent.width
+                                height: (!window.viewArchivedMode && window.archivedNotesCount > 0) ? 45 : 0
+                                visible: height > 0
+                                clip: true
+                                radius: 8
+                                // Menggunakan variabel tema
+                                color: window.bgCard
+                                border.color: window.borderMain
+                                border.width: 1
+
+                                RowLayout {
+                                    anchors.fill: parent; anchors.margins: 12; spacing: 10
+                                    Text { text: "📦"; font.pixelSize: 16 }
+                                    Text {
+                                        text: "Catatan Diarsipkan (" + window.archivedNotesCount + ")"
+                                        font.family: "Monospace"
+                                        font.pixelSize: 13
+                                        color: window.txtPrimary // Mengikuti warna teks tema
+                                        Layout.fillWidth: true
+                                    }
+                                    Text {
+                                        text: "Lihat ➔";
+                                        font.family: "Monospace";
+                                        font.pixelSize: 12;
+                                        color: window.orangeAccent;
+                                        font.bold: true
+                                    }
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: window.viewArchivedMode = true
+                                }
+                            }
+
+                            // Banner 2: Kembali ke Catatan Utama
+                            Rectangle {
+                                width: parent.width
+                                height: window.viewArchivedMode ? 45 : 0
+                                visible: height > 0
+                                clip: true
+                                radius: 8
+                                // Menggunakan variabel tema agar konsisten
+                                color: window.bgCard
+                                border.color: window.borderMain
+                                border.width: 1
+
+                                RowLayout {
+                                    anchors.fill: parent; anchors.margins: 12; spacing: 10
+                                    Text { text: "⬅️"; font.pixelSize: 16 }
+                                    Text {
+                                        text: "Kembali ke Catatan Utama"
+                                        font.family: "Monospace"
+                                        font.pixelSize: 13
+                                        font.bold: true
+                                        color: window.txtPrimary // Mengikuti warna teks tema
+                                        Layout.fillWidth: true
+                                    }
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: window.viewArchivedMode = false
+                                }
+                            }
+                        }
+            // ==========================================
+            // DAFTAR CATATAN
+            // ==========================================
             ListView {
                 id: notesList
-                anchors.top: categoryScroll.bottom
+                anchors.top: bannerContainer.bottom
+                anchors.topMargin: 10
                 anchors.bottom: bottomNavBar.top
                 anchors.bottomMargin: 10
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -629,6 +699,7 @@ Window {
 
                 delegate: Item {
                     width: notesList.width
+                    height: noteCard.visible ? noteCard.height : 0
                     property string mTitle: model.title !== undefined ? model.title : ""
                     property string mBody: model.body !== undefined ? model.body : ""
                     property string plainBody: mBody.replace(/<[^>]*>/g, "")
@@ -636,9 +707,6 @@ Window {
                     property bool isSearchMatch: window.searchQuery === "" ||
                         mTitle.toLowerCase().indexOf(window.searchQuery.toLowerCase()) !== -1 ||
                         plainBody.toLowerCase().indexOf(window.searchQuery.toLowerCase()) !== -1
-
-                    visible: (window.selectedCategory === "Semua" || mCategory === window.selectedCategory) && isSearchMatch
-                    height: visible ? (noteCard.implicitHeight + 12) : 0
 
                     NoteCard {
                         id: noteCard
@@ -649,8 +717,13 @@ Window {
                         noteDate: model.date !== undefined ? model.date : ""
                         noteTags: model.tags !== undefined ? model.tags : ""
                         isPinned: model.isPinned !== undefined ? model.isPinned : false
-                        isArchived: model.isArchived !== undefined ? model.isArchived : false
                         isLocked: model.isLocked !== undefined ? model.isLocked : false
+
+                        property bool statusArsip: model.isArchived === true
+                        isArchived: statusArsip
+                        visible: statusArsip === window.viewArchivedMode
+                        height: visible ? implicitHeight : 0
+                        clip: true
 
                         onCardClicked: {
                             if (model.isLocked) {
@@ -671,19 +744,27 @@ Window {
                             notesModel.setProperty(index, "isPinned", !st)
                             window.sortNotes()
                             window.persistNotes()
-                            show(!st ? "Di-Pin 📌" : "Pin dilepas 🔓")
+                            window.show(!st ? "Di-Pin 📌" : "Pin dilepas 🔓")
                         }
                         onArchiveRequested: {
-                            let st = model.isArchived
-                            notesModel.setProperty(index, "isArchived", !st)
+                            let currentState = model.isArchived === true
+                            let newState = !currentState
+
+                            var obj = notesModel.get(index)
+                            obj.isArchived = newState
+                            notesModel.set(index, obj)
+
+                            window.updateArchivedCount()
                             window.persistNotes()
-                            show(!st ? "Masuk Arsip 📦" : "Keluar Arsip")
+                            window.show(newState ? "Masuk Arsip 📦" : "Keluar Arsip")
                         }
                     }
                 }
             }
 
-            // Bottom nav bar — search + tombol buat catatan + toggle tema
+            // ==========================================
+            // BOTTOM NAV BAR
+            // ==========================================
             RowLayout {
                 id: bottomNavBar
                 anchors.bottom: parent.bottom
@@ -693,7 +774,6 @@ Window {
                 height: 50
                 spacing: 10
 
-                // Kotak search
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -725,7 +805,7 @@ Window {
                         Item {
                             width: 16; height: 16
                             Layout.alignment: Qt.AlignVCenter
-                            
+
                             Canvas {
                                 id: searchLensCanvas
                                 anchors.fill: parent
@@ -743,7 +823,7 @@ Window {
                                 }
                                 onVisibleChanged: if (visible) requestPaint()
                             }
-                            
+
                             Canvas {
                                 id: searchCloseCanvas
                                 anchors.fill: parent
@@ -762,7 +842,7 @@ Window {
                                 }
                                 onVisibleChanged: if (visible) requestPaint()
                             }
-                            
+
                             MouseArea {
                                 anchors.fill: parent
                                 onClicked: {
@@ -776,9 +856,6 @@ Window {
                     }
                 }
 
-
-
-                // Tombol buat catatan baru
                 Rectangle {
                     width: 50; height: 50; radius: 25
                     color: window.orangeAccent
@@ -793,7 +870,7 @@ Window {
                             ctx.lineWidth = 1.8;
                             ctx.lineCap = "round";
                             ctx.lineJoin = "round";
-                            
+
                             ctx.beginPath();
                             ctx.moveTo(2, 16);
                             ctx.lineTo(5, 16);
@@ -802,7 +879,7 @@ Window {
                             ctx.lineTo(2, 13);
                             ctx.closePath();
                             ctx.stroke();
-                            
+
                             ctx.beginPath();
                             ctx.moveTo(11, 4);
                             ctx.lineTo(14, 7);
@@ -856,17 +933,28 @@ Window {
 
     // DIALOG & KOMPONEN EKSTERNAL
     CustomDialog {
-        id: deleteDialog
-        onConfirmed: {
-            if (window.pendingDeleteIndex !== -1) {
-                notesModel.remove(window.pendingDeleteIndex)
-                window.pendingDeleteIndex = -1
-                window.persistNotes()
-                show("Catatan berhasil dimusnahkan! 🗑️")
+            id: deleteDialog
+            onConfirmed: {
+                if (window.pendingDeleteIndex !== -1) {
+                    // 1. Hapus catatan dari model
+                    notesModel.remove(window.pendingDeleteIndex)
+
+                    // 2. Hitung ulang total arsip
+                    window.updateArchivedCount()
+
+                    // 3. Jika sedang di dalam mode arsip, tendang keluar
+                    if (window.viewArchivedMode) {
+                        window.viewArchivedMode = false
+                    }
+
+                    // 4. Reset index hapus, simpan, dan tampilkan notifikasi
+                    window.pendingDeleteIndex = -1
+                    window.persistNotes()
+                    window.show("Catatan berhasil dimusnahkan! 🗑️")
+                }
             }
+            onCanceled: { window.pendingDeleteIndex = -1 }
         }
-        onCanceled: { window.pendingDeleteIndex = -1 }
-    }
 
     OpenNoteDialog {
         id: openNotePasswordDialog
@@ -903,7 +991,6 @@ Window {
                 Layout.alignment: Qt.AlignHCenter
             }
 
-            // Info profil Google
             RowLayout {
                 visible: window.isLoggedIn
                 spacing: 12
@@ -936,7 +1023,6 @@ Window {
                 }
             }
 
-            // Status Sync
             Text {
                 visible: window.isLoggedIn
                 text: window.syncStatus

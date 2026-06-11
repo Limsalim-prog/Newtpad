@@ -4,7 +4,6 @@ import QtQuick.Layouts
 
 Item {
     id: editPageRoot
-    anchors.fill: parent
 
     property int noteIndex: -1
     property string currentDate: ""
@@ -45,13 +44,13 @@ Item {
         let start = bodyInput.selectionStart
         let end = bodyInput.selectionEnd
         let oldText = bodyInput.text
-        
+
         let selectedText = oldText.substring(start, end)
         let replacement = prefix + selectedText + suffix
-        
+
         bodyInput.remove(start, end)
         bodyInput.insert(start, replacement)
-        
+
         bodyInput.select(start + prefix.length, start + prefix.length + selectedText.length)
         bodyInput.forceActiveFocus()
     }
@@ -61,11 +60,11 @@ Item {
 
         if (noteIndex !== -1 && noteIndex < notesModel.count) {
             notesModel.setProperty(noteIndex, "title", titleInput.text)
-            
+
             let rawBody = bodyInput.text
             let savedBody = editPageRoot.currentIsMarkdown ? rawBody : editPageRoot.cleanHtmlBoilerplate(rawBody)
             notesModel.setProperty(noteIndex, "body", savedBody)
-            
+
             notesModel.setProperty(noteIndex, "category", editPageRoot.currentCategory)
             notesModel.setProperty(noteIndex, "reminder", editPageRoot.currentReminder)
             notesModel.setProperty(noteIndex, "isTodo", editPageRoot.currentIsTodo)
@@ -160,15 +159,22 @@ Item {
                     }
                     MouseArea {
                         anchors.fill: parent
-                        onClicked: { editPageRoot.commitCurrentChanges(); editPageRoot.backClicked() }
-                    }
+                        onClicked: {
+
+                            editPageRoot.commitCurrentChanges()
+
+                            window.persistNotes()
+
+                            editPageRoot.backClicked()
+                        }
+                }
                 }
 
                 ListView {
                     id: tabListView
                     Layout.fillWidth: true; Layout.preferredHeight: 35; Layout.alignment: Qt.AlignVCenter
                     clip: true; orientation: ListView.Horizontal; spacing: 6
-                    model: activeTabsModel
+                    // model: activeTabsModel
 
                     Connections {
                         target: editPageRoot
@@ -483,12 +489,35 @@ Item {
 
                                 // --- MEDIA ATTACHMENTS (Pindah ke dalem ScrollView) ---
                                 Loader {
-                                    id: photoAttachment
-                                    source: "PhotoAttachment.qml"
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: status === Loader.Ready ? item.implicitHeight : 0
-                                    visible: status === Loader.Ready && item.visible
-                                    onLoaded: item.onDataChanged.connect(editPageRoot.commitCurrentChanges)
+                                            id: photoAttachment
+                                            source: "PhotoAttachment.qml"
+
+                                            // 🌟 TAMBAHKAN 3 BARIS INI AGAR FOTO TIDAK GEPENG/MENGHILANG 🌟
+                                            Layout.fillWidth: true
+                                            Layout.preferredHeight: status === Loader.Ready ? item.implicitHeight : 0
+                                            visible: status === Loader.Ready && item.implicitHeight > 0
+
+                                            onLoaded: {
+                                                item.dataChanged.connect(
+                                                    editPageRoot.commitCurrentChanges
+                                                )
+                                                // ... (biarkan sisa kode di dalam sini) ...
+
+                                        if (editPageRoot.noteIndex >= 0 &&
+                                            editPageRoot.noteIndex < notesModel.count) {
+
+                                            let data =
+                                                notesModel.get(
+                                                    editPageRoot.noteIndex
+                                                )
+
+                                            item.loadData(
+                                                data.photoData
+                                                    ? data.photoData
+                                                    : ""
+                                            )
+                                        }
+                                    }
                                 }
 
                                 Loader {
@@ -496,8 +525,16 @@ Item {
                                     source: "VoiceAttachment.qml"
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: status === Loader.Ready ? item.implicitHeight : 0
-                                    visible: status === Loader.Ready && item.visible
-                                    onLoaded: item.onDataChanged.connect(editPageRoot.commitCurrentChanges)
+                                    visible: status === Loader.Ready
+                                    // PERBAIKAN: Gunakan dataChanged.connect
+                                    onLoaded: {
+                                        item.dataChanged.connect(editPageRoot.commitCurrentChanges)
+                                        if (item.isRecordingChanged) {
+                                            item.isRecordingChanged.connect(function() {
+                                                micCanvas.requestPaint()
+                                            })
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -586,7 +623,7 @@ Item {
                                 ctx.lineTo(7, 12);
                                 ctx.closePath();
                                 ctx.stroke();
-                                
+
                                 ctx.beginPath();
                                 ctx.arc(9.5, 4.5, 1, 0, 2*Math.PI);
                                 ctx.fillStyle = window.txtPrimary;
@@ -716,6 +753,14 @@ Item {
             anchors.fill: parent
             anchors.margins: 16
             spacing: 10
+            PhotoAttachment {
+                    id: tagsphotoAttachment
+                    Layout.fillWidth: true
+                    // Pastikan ini terhubung dengan sistem save catatanmu
+                    onDataChanged: {
+                        editPageRoot.noteChanged()
+                    }
+                }
 
             Text {
                 text: "Kelola Tag Catatan 🏷️"
@@ -879,7 +924,7 @@ Item {
                     anchors.fill: parent
                     onClicked: {
                         burgerMenuPopup.close()
-                        if (photoAttachment.item && typeof photoAttachment.item.openMenu === "function") 
+                        if (photoAttachment.item && typeof photoAttachment.item.openMenu === "function")
                             photoAttachment.item.openMenu()
                     }
                 }
@@ -892,9 +937,11 @@ Item {
                 RowLayout {
                     anchors.fill: parent; anchors.leftMargin: 10; spacing: 10
                     Canvas {
+                        id: micCanvas
                         width: 14; height: 14
                         Layout.alignment: Qt.AlignVCenter
-                        property bool isRec: voiceAttachment.item && voiceAttachment.item.isRecording
+                        property bool isRec: voiceAttachment.item ? voiceAttachment.item.isRecording : false
+                        onIsRecChanged: requestPaint()
                         onPaint: {
                             var ctx = getContext("2d");
                             ctx.reset();
@@ -924,7 +971,7 @@ Item {
                     anchors.fill: parent
                     onClicked: {
                         burgerMenuPopup.close()
-                        if (voiceAttachment.item && typeof voiceAttachment.item.toggleRecord === "function") 
+                        if (voiceAttachment.item && typeof voiceAttachment.item.toggleRecord === "function")
                             voiceAttachment.item.toggleRecord()
                     }
                 }
@@ -963,12 +1010,12 @@ Item {
                     anchors.fill: parent
                     onClicked: {
                         burgerMenuPopup.close()
-                        if (editPageRoot.currentPassword === "") { 
-                            setPasswordDialog.mode = 1; 
-                            setPasswordDialog.correctPassword = "" 
-                        } else { 
-                            setPasswordDialog.mode = 2; 
-                            setPasswordDialog.correctPassword = editPageRoot.currentPassword 
+                        if (editPageRoot.currentPassword === "") {
+                            setPasswordDialog.mode = 1;
+                            setPasswordDialog.correctPassword = ""
+                        } else {
+                            setPasswordDialog.mode = 2;
+                            setPasswordDialog.correctPassword = editPageRoot.currentPassword
                         }
                         setPasswordDialog.open()
                     }
@@ -1005,7 +1052,7 @@ Item {
                     anchors.fill: parent
                     onClicked: {
                         burgerMenuPopup.close()
-                        if (typeof reminderPopup !== "undefined" && reminderPopup.item) 
+                        if (typeof reminderPopup !== "undefined" && reminderPopup.item)
                             reminderPopup.item.open()
                     }
                 }
@@ -1043,11 +1090,11 @@ Item {
                     anchors.fill: parent
                     onClicked: {
                         burgerMenuPopup.close()
-                        if (typeof sharePopup !== "undefined") { 
-                            sharePopup.shareTitle = titleInput.text; 
-                            sharePopup.shareBody = bodyInput.text; 
+                        if (typeof sharePopup !== "undefined") {
+                            sharePopup.shareTitle = titleInput.text;
+                            sharePopup.shareBody = bodyInput.text;
                             sharePopup.isMarkdown = editPageRoot.currentIsMarkdown;
-                            sharePopup.open() 
+                            sharePopup.open()
                         }
                     }
                 }
